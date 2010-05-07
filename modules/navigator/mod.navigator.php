@@ -200,8 +200,10 @@ class Navigator {
 			$seg = '';
 			$tagdata = $TMPL->tagdata;
 			
+			$site_id = $PREFS->ini('site_id');
 			$pages	= $PREFS->ini('site_pages');
-			$uris	= $pages['uris'];
+			$uris	= $pages[$site_id]['uris'];
+			
 			$page_uri = '';
 			
 			// -------------------------------------------------------

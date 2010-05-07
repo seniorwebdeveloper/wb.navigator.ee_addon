@@ -590,8 +590,9 @@ class Navigator_CP {
 		global $FNS, $IN, $DB, $DSP, $LANG, $PREFS;
 		
 		$seg = '';
+		$site_id = $PREFS->ini('site_id');
 		$pages	= $PREFS->ini('site_pages');
-		$uris	= $pages['uris'];
+		$uris	= $pages[$site_id]['uris'];
 		$page_uri = '';
 		$site_id = $DB->escape_str($PREFS->ini('site_id'));
 		
