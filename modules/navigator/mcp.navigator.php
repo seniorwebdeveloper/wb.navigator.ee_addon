@@ -22,7 +22,7 @@ Purpose: Navigator module - CP
 
 class Navigator_CP {
 
-	var $version = '1.3';
+	var $version = '1.4';
 	
 	// -------------------------
 	//	Constructor
