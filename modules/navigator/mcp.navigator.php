@@ -1061,6 +1061,8 @@ class Navigator_CP {
 		//field end
 		
 		// templates
+		$hidden_template_indicator = $PREFS->ini('hidden_template_indicator');
+
 		$sql = "SELECT exp_template_groups.group_name, 
 				exp_template_groups.group_id, 
 				exp_templates.template_name, 
@@ -1081,8 +1083,10 @@ class Navigator_CP {
 		 */
 		
 		$sql .= " AND exp_template_groups.is_user_blog = 'n'";
+		$sql .= " AND SUBSTRING(exp_template_groups.group_name, 1, " .strlen($hidden_template_indicator) .") <> '" .$hidden_template_indicator ."'";
+		$sql .= " AND SUBSTRING(exp_templates.template_name, 1, " .strlen($hidden_template_indicator) .") <> '" .$hidden_template_indicator ."'";
 		$sql .= " ORDER BY exp_template_groups.group_order, exp_templates.template_name";
-		
+
 		$query = $DB->query($sql);
 		
 		// Template field start
