@@ -1,29 +1,19 @@
-<?php
+<?php if ( ! defined('EXT')) exit('Invalid file request');
 
-/*
-=====================================================
-Navigator Module for ExpressionEngine
------------------------------------------------------
-Build: 20090605
------------------------------------------------------
-Copyright (c) 2005 - 2009 Elwin Zuiderveld 
-=====================================================
-THIS MODULE IS PROVIDED "AS IS" WITHOUT WARRANTY OF
-ANY KIND OR NATURE, EITHER EXPRESSED OR IMPLIED,
-INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-OR NON-INFRINGEMENT.
-=====================================================
-File: mod.navigator.php
------------------------------------------------------
-Purpose: Navigator module
-=====================================================
-*/
-
-if ( ! defined('EXT'))
-{
-	exit('Invalid file request');
-}
+/**
+ * Navigator Module for ExpressionEngine.
+ *
+ * This module is provided "as is" without warranty of
+ * any kind or nature, either expressed or implied, including,
+ * but not limited to, the implied warranties of merchantability,
+ * fitness for a particular purpose, or non-infringement.
+ *
+ * @author		Elwin Zuiderveld
+ * @author		Wes Baker (http://github.com/wesbaker)
+ * @author		Stephen Lewis (http://github.com/experience)
+ * @copyright	Elwin Zuiderveld (2005-2009)
+ * @package		Navigator
+ */
 
 class Navigator {
 
@@ -205,260 +195,208 @@ class Navigator {
 			$uris	= $pages[$site_id]['uris'];
 			
 			$page_uri = '';
+
+
+			/**
+			 * Prepare all the single variables up-front, so they can be used in the conditionals.
+			 *
+			 * @since		1.5.0
+			 * @author		Stephen Lewis (http://github.com/experience)
+			 */
+
+			/**
+			 * {nav_url}
+			 *
+			 * Not sure this is how I would have done things, but it works and a rewrite is overkill.
+			 * Many of the 'nav_url' options are mutually exclusive. If (for example) a custom URL and
+			 * a template_group/template have both been specified, the template_group/template wins,
+			 * because it appears later in the code.
+			 *
+			 * Not at all intuitive in terms of the creation and management of navigation URLs, but that's
+			 * probably more of a UI issue.
+			 */
+
+			$nav_url = '';
+
+			// Custom URL.
+			if ($row['nav_custom_url'])
+			{
+				$nav_url = $row['nav_custom_url'];
+			}
+
+			// Pages URL.
+			if ($row['pages_uri'] == 'y' && array_key_exists($row['nav_entry_id'], $uris))
+			{
+				$nav_url = $FNS->create_url($uris[$row['nav_entry_id']], TRUE, FALSE);
+			}
+
+			// Template Group / Template.
+			if ($row['template_id'] && array_key_exists($row['template_id'], $templates))
+			{
+				$nav_url = $templates[$row['template_id']] .'/';
+
+				// Category URL and Entry Title are mutually exclusive.
+				if ($row['nav_enty_id'] && array_key_exists($row['nav_entry_id'], $titles))
+				{
+					// Entry Title.
+					$nav_url .= $titles[$row['nav_entry_id']] .'/';
+
+					// Additional URL segments.
+					if ($row['nav_url_segments'])
+					{
+						$nav_url .= ($row['nav_url_segments']{0} == '/')
+							? substr($row['nav_url_segments'], 1)
+							: $row['nav_url_segments'];
+					}
+				}
+				elseif ($row['category_id'])
+				{
+					// Category.
+					$t_url = explode('.', $row['category_id']);
+					$cat_name = '';
+					$cat_url_title = '';
+					
+					if (array_key_exists($cat_id['1'], $categories))
+					{
+						$cat_name = $categories[$cat_id['1']];
+						$cond['nav_category'] = ($cat_name == '0') ? 'FALSE' : $cat_name;
+						$cat_url_title = $cat_url_titles[$cat_id['1']];
+						$cond['nav_cat_url_title'] = ($cat_url_title == '0') ? 'FALSE' : $cat_url_title;
+					}
+
+					$nav_url = ($PREFS->ini('use_category_name') == 'y')
+						? $PREFS->ini('reserved_category_word').'/'.$cat_url_title
+						: 'C' .$t_url['1'];
+				}
+
+				$nav_url = $FNS->create_url($nav_url);
+			}
+
+			// {nav_is_active}
+			$nav_is_active = $FNS->fetch_current_uri() == $nav_url ? 'y' : 'n';
+
+			// {nav_url_title}
+			$nav_url_title = ($row['nav_entry_id'] && array_key_exists($row['nav_entry_id'], $titles))
+				? $titles[$row['nav_entry_id']]
+				: '';
+
+			// {nav_url_segments}
+			$nav_url_segments = $row['nav_url_segments'];
 			
-			// -------------------------------------------------------
-			//	Prep Conditionals
-			// -------------------------------------------------------
+			// {nav_template}
+			$nav_template = ($row['template_id'] && array_key_exists($row['template_id'], $templates))
+				? $templates[$row['template_id']]
+				: '';
+
+			// {nav_category} / {nav_category_id}
+			$nav_category		= '';
+			$nav_category_id	= '';
+
+			if ($row['category_id'])
+			{
+				$exploded = explode('.', $row['category_id']);
 			
-			// add dreamscape
-			$cond['count'] = $i;
-			// END
-			
-			$cond['nav_title'] = ($row['nav_title'] == '0') ? 'FALSE' : $row['nav_title'];
-			// Fur the nav_url we can only use the {if nav_url} conditional, {if nav_url == "bla"} won't work.
-			$cond['nav_url'] = ($row['nav_custom_url'] == '' && $row['template_id'] == '0' && $row['category_id'] == '0' && $row['nav_entry_id'] == '0' && $row['nav_url_segments'] == '') ? 'FALSE' : 'TRUE';
-			$cond['nav_properties'] = ($row['nav_properties'] == '') ? 'FALSE' : $row['nav_properties'];
-			$cond['nav_description'] = ($row['nav_description'] == '') ? 'FALSE' : $row['nav_description'];
-			
-			$cond['nav_id'] = ($row['nav_id'] == '0') ? 'FALSE' : $row['nav_id'];
-			$cond['nav_url_segments'] = ($row['nav_url_segments'] == '') ? 'FALSE' : $row['nav_url_segments'];
-			
-			if ($row['template_id'] != '0') {
-				if (array_key_exists($row['template_id'], $templates)) {
-					$cond['nav_template'] = ($templates[$row['template_id']] == '0') ? 'FALSE' : $templates[$row['template_id']];
+				if (array_key_exists($exploded['1'], $categories))
+				{
+					$nav_category		= $categories[$exploded['1']];
+					$nav_category_id	= $exploded['1'];
 				}
 			}
-			else
-			{
-				$cond['nav_template'] = 'FALSE';
-			}
-			if ($row['category_id'] != '0') {
-				$cat_id = explode('.', $row['category_id']);
-				
-				if (array_key_exists($cat_id['1'], $categories)) {
-					$cat_name = $categories[$cat_id['1']];
-					$cond['nav_category'] = ($cat_name == '0') ? 'FALSE' : $cat_name;
-					$cat_url_title = $categories[$cat_id['1']];
-					$cond['nav_cat_url_title'] = ($cat_url_title == '0') ? 'FALSE' : $cat_url_title;
-				}
-			}
-			else
-			{
-				$cond['nav_category'] = 'FALSE';
-				$cond['nav_cat_url_title'] = 'FALSE';
-			}
-			$cond['nav_category_id'] = ($row['category_id'] == '0') ? 'FALSE' : $row['category_id'];
+
+			// {nav_group_id}
+			$nav_group_id = $row['group_id'] ? $row['group_id'] : '';
 			
-			if ($row['nav_entry_id'] != '0') {
-				if (array_key_exists($row['nav_entry_id'], $titles)) {
-					$cond['nav_url_title'] = ($titles[$row['nav_entry_id']] == '0') ? 'FALSE' : $titles[$row['nav_entry_id']];
-				}
-			}
-			else
-			{
-				$cond['nav_url_title'] = 'FALSE';
-			}
-			$cond['nav_entry_id'] = ($row['nav_entry_id'] == '0') ? 'FALSE' : $row['nav_entry_id'];
-			// 0 ?
-			$cond['nav_title_length'] = ($row['nav_title_length'] == '0') ? 'FALSE' : $row['nav_title_length'];
-			$cond['nav_order'] = ($row['nav_order'] == '0') ? 'FALSE' : $row['nav_order'];
+
+			// Conditionals.
+			$cond = array(
+				'count'				=> $i,
+				'nav_category'		=> $nav_category,
+				'nav_category_id'	=> $nav_category_id,
+				'nav_category_word'	=> $nav_category_word,
+				'nav_description'	=> $row['nav_description'],
+				'nav_entry_id'		=> $row['nav_entry_id'],
+				'nav_group_id'		=> $nav_group_id,
+				'nav_id'			=> $row['nav_id'],
+				'nav_is_active'		=> $nav_is_active,
+				'nav_order'			=> $row['nav_order'],
+				'nav_properties'	=> $row['nav_properties'],
+				'nav_template'		=> $nav_template,
+				'nav_title'			=> $row['nav_title'],
+				'nav_title_length'	=> $row['nav_title_length'],		// No idea what this is. Doesn't appear to be strlen($nav_title).
+				'nav_url'			=> $nav_url,
+				'nav_url_segments'	=> $nav_url_segments,
+				'nav_url_title'		=> $nav_url_title,
+				'total_results'		=> $query->num_rows
+			);
 			
-			// not sure this one is needed, taken from example in docs
 			$tagdata = $FNS->prep_conditionals($tagdata, $cond);
-			// end conditionals
 			
+			// Single Variables.
 			foreach ($TMPL->var_single as $key)
 			{
-			
 				switch ($key)
 				{
+					/**
+					 * @todo Move this out of the loop, and do the prep work once.
+					 */
+
 					case 'switch':
-					
-					// ----------------------------------------
-					//	 parse {switch} variable
-					// ----------------------------------------
-					
-					$param = $TMPL->fetch_param('switch');
-					$sw = '';
-					
-					if (isset($param['switch']))
-					{
-						$sopt = explode("|", $param);
-						if (count($sopt) == 2)
+						$param = $TMPL->fetch_param('switch');
+						$sw = '';
+						if (isset($param['switch']))
 						{
-							if (isset($switch[$param['switch']]) AND $switch[$param['switch']] == $sopt['0'])
+							$sopt = explode("|", $param);
+							if (count($sopt) == 2)
 							{
-								$switch[$param['switch']] = $sopt['1'];
-								$sw = $sopt['1'];
-							}
-							else
-							{
-								$switch[$param['switch']] = $sopt['0'];
-								$sw = $sopt['0'];
+								if (isset($switch[$param['switch']]) AND $switch[$param['switch']] == $sopt['0'])
+								{
+									$switch[$param['switch']] = $sopt['1'];
+									$sw = $sopt['1'];
+								}
+								else
+								{
+									$switch[$param['switch']] = $sopt['0'];
+									$sw = $sopt['0'];
+								}
 							}
 						}
-					}
-					
-					$tagdata = $TMPL->swap_var_single($key, $sw, $tagdata);
-					break;
-					
-					// ----------------------------------------
-					//	 parse other variables
-					// ----------------------------------------
+						
+						$tagdata = $TMPL->swap_var_single($key, $sw, $tagdata);
+						break;
 					
 					case 'nav_url':
-						
-						
-						
-						// Custom URL
-						if ($row['nav_custom_url'] != '') {
-							$url = $row['nav_custom_url'];
-							$tagdata = $TMPL->swap_var_single($key, $url, $tagdata);
-							// nav_custom_url, Template and Entry Title will be ignored, break
-							break;
-						}
-						
-						// Pages URL
-						if ($row['pages_uri'] == 'y' && array_key_exists($row['nav_entry_id'],$uris)) {
-							$url = $FNS->create_url($uris[$row['nav_entry_id']], 1, 0);
-							$tagdata = $TMPL->swap_var_single($key, $url, $tagdata);
-							break;
-						}
-						
-						// Template_group / Template
-						if ($row['template_id'] != '0') {
-							if (array_key_exists($row['template_id'], $templates)) {
-								$url = $templates[$row['template_id']].'/';
-							}
-						}
-						
-						// Catgory URL
-						if ($row['category_id'] != '0') {
-							$t_url = explode('.', $row['category_id']);
-							$cat_name = '';
-							$cat_url_title = '';
-							
-							if (array_key_exists($cat_id['1'], $categories)) {
-								$cat_name = $categories[$cat_id['1']];
-								$cond['nav_category'] = ($cat_name == '0') ? 'FALSE' : $cat_name;
-								$cat_url_title = $cat_url_titles[$cat_id['1']];
-								$cond['nav_cat_url_title'] = ($cat_url_title == '0') ? 'FALSE' : $cat_url_title;
-							}
-							
-							if ($PREFS->ini('use_category_name') == 'y') {
-								// Cat Name
-								$url .= $PREFS->ini('reserved_category_word').'/'.$cat_url_title;
-							}
-							else
-							{
-								$url .= 'C'.$t_url['1'];
-							}
-							$url = $FNS->create_url($url);
-							$tagdata = $TMPL->swap_var_single($key, $url, $tagdata);
-							break;
-						}
-						
-						// Entry Title
-						if ($row['nav_entry_id'] != '0') {
-							if (array_key_exists($row['nav_entry_id'], $titles)) {
-								$url .= '/'.$titles[$row['nav_entry_id']].'/';
-							}
-						}
-						
-						// URL Segments
-						if ($row['nav_url_segments'] != '') {
-							$url .= '/';
-							if ($row['nav_url_segments']{0} == '/') {
-								$seg = substr($row['nav_url_segments'], 1);
-							}
-							else
-							{
-								$seg = $row['nav_url_segments'];
-							}
-						}
-						
-						if ($url != '') $url = $FNS->create_url($url).$seg;
-						$tagdata = $TMPL->swap_var_single($key, $url, $tagdata);
+						$tagdata = $TMPL->swap_var_single($key, $nav_url, $tagdata);
 						break;
-						
+
 					case 'nav_url_title':
-						// url_title
-						if ($row['nav_entry_id'] != '0') {
-							$url = $titles[$row['nav_entry_id']];
-							$tagdata = $TMPL->swap_var_single($key, $url, $tagdata);
-							$url = '';
-						}
-						else
-						{
-							$tagdata = $TMPL->swap_var_single($key, '', $tagdata);
-						}
+						$tagdata = $TMPL->swap_var_single($key, $nav_url_title, $tagdata);
 						break;
 					
 					case 'nav_url_segments':
-						// url_title
-						if ($row['nav_url_segments'] != '') {
-							$tagdata = $TMPL->swap_var_single($key, $row['nav_url_segments'], $tagdata);
-						}
-						else
-						{
-							$tagdata = $TMPL->swap_var_single($key, '', $tagdata);
-						}
+						$tagdata = $TMPL->swap_var_single($key, $nav_url_segments, $tagdata);
 						break;
 						
 					case 'nav_template':
-						// url_title
-						if ($row['template_id'] != '0') {
-							$tmpl = $templates[$row['template_id']];
-							$tagdata = $TMPL->swap_var_single($key, $tmpl, $tagdata);
-						}
-						else
-						{
-							$tagdata = $TMPL->swap_var_single($key, '', $tagdata);
-						}
+						$tagdata = $TMPL->swap_var_single($key, $nav_template, $tagdata);
 						break;
 						
 					case 'nav_category':
-						// nav_category
-						if ($row['category_id'] != '0') {
-							$t_url = explode('.', $row['category_id']);
-							$cat_name = $categories[$t_url['1']];
-							$tagdata = $TMPL->swap_var_single($key, $cat_name, $tagdata);
-						}
-						else
-						{
-							$tagdata = $TMPL->swap_var_single($key, '', $tagdata);
-						}
+						$tagdata = $TMPL->swap_var_single($key, $nav_category, $tagdata);
 						break;
 						
 					case 'nav_category_id':
-						// nav_category_id
-						if ($row['category_id'] != '0') {
-							$t_url = explode('.', $row['category_id']);
-							$cat_id = $t_url['1'];
-							$tagdata = $TMPL->swap_var_single($key, $cat_id, $tagdata);
-						}
-						else
-						{
-							$tagdata = $TMPL->swap_var_single($key, '', $tagdata);
-						}
+						$tagdata = $TMPL->swap_var_single($key, $nav_category_id, $tagdata);
 						break;
 						
 					case 'nav_category_word':
-						// nav_category_word
 						$tagdata = $TMPL->swap_var_single($key, $nav_category_word, $tagdata);
 						break;
 						
 					case 'nav_group_id':
-						if ($row['group_id'] != '0') {
-							$tagdata = $TMPL->swap_var_single($key, $row['group_id'], $tagdata);
-						}
-						else
-						{
-							$tagdata = $TMPL->swap_var_single($key, '', $tagdata);
-						}
+						$tagdata = $TMPL->swap_var_single($key, $nav_group_id, $tagdata);
 						break;
 						
-				} // switch
+				}
 				
 				// make sure we only swap certain fields
 				foreach($fields as $value)
@@ -467,9 +405,7 @@ class Navigator {
 						$tagdata = $TMPL->swap_var_single($key, $row[$key], $tagdata);
 					}
 				}
-				// foreach
 			}
-			// foreach
 			
 			if ($count >= count($query->result)) {
 				if (is_numeric($TMPL->fetch_param('backspace')))
@@ -489,5 +425,7 @@ class Navigator {
 	// Constructor
 	
 }
-// END CLASS
-?>
+
+
+/* End of file			mod.navigator.php */
+/* File location		system/modules/navigator/mod.navigator.php */

@@ -1,28 +1,25 @@
 <?php
 
-/*
-=====================================================
-Navigator Module for ExpressionEngine
------------------------------------------------------
-Build: 20090605
------------------------------------------------------
-Copyright (c) 2005 - 2009 Elwin Zuiderveld
-=====================================================
-THIS MODULE IS PROVIDED "AS IS" WITHOUT WARRANTY OF
-ANY KIND OR NATURE, EITHER EXPRESSED OR IMPLIED,
-INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-OR NON-INFRINGEMENT.
-=====================================================
-File: mcp.navigator.php
------------------------------------------------------
-Purpose: Navigator module - CP
-=====================================================
-*/
+/**
+ * Navigator Module for ExpressionEngine.
+ *
+ * This module is provided "as is" without warranty of
+ * any kind or nature, either expressed or implied, including,
+ * but not limited to, the implied warranties of merchantability,
+ * fitness for a particular purpose, or non-infringement.
+ *
+ * @author		Elwin Zuiderveld
+ * @author		Wes Baker (http://github.com/wesbaker)
+ * @author		Stephen Lewis (http://github.com/experience)
+ * @copyright	Elwin Zuiderveld (2005-2009)
+ * @package		Navigator
+ * @version		1.5.0
+ */
+
 
 class Navigator_CP {
 
-	var $version = '1.4';
+	var $version = '1.5.0';
 	
 	// -------------------------
 	//	Constructor
@@ -1772,5 +1769,7 @@ EOT;
 	// END
 	
 }
-// END CLASS
-?>
+
+
+/* End of file			mod.navigator.php */
+/* File location		system/modules/navigator/mod.navigator.php */
