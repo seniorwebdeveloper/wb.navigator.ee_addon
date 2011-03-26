@@ -1085,7 +1085,7 @@ class Navigator_CP {
 		$sql .= " AND exp_template_groups.is_user_blog = 'n'";
 		$sql .= " AND SUBSTRING(exp_template_groups.group_name, 1, " .strlen($hidden_template_indicator) .") <> '" .$hidden_template_indicator ."'";
 		$sql .= " AND SUBSTRING(exp_templates.template_name, 1, " .strlen($hidden_template_indicator) .") <> '" .$hidden_template_indicator ."'";
-		$sql .= " ORDER BY exp_template_groups.group_order, exp_templates.template_name";
+		$sql .= " ORDER BY exp_template_groups.group_name, exp_templates.template_name";
 
 		$query = $DB->query($sql);
 		
@@ -1095,26 +1095,33 @@ class Navigator_CP {
 		$DSP->body .= $DSP->div_c();
 		
 		$DSP->body .= $DSP->div('itemWrapper');
-		//$DSP->body .= $DSP->input_select_header('template_id');
 		$DSP->body .= '<select name="template_id" class="select" style="width:200px;">';
-		
 		$DSP->body .= $DSP->input_select_option('0', '');
-		$DSP->body .= '<optgroup label="'.$LANG->line('lbl_templates').'">'.NL;
+
+		$current_template_group = '';
+
 		foreach ($query->result as $row)
 		{
-			$t = $row['group_name'].'/'.$row['template_name'];
-			$t_opt = $row['group_id'].'.'.$row['template_id'];
-			
-			if ($t_opt === $template_id) {
-				$DSP->body .= $DSP->input_select_option($t_opt, $t, 'y');
-			}
-			else
+			// Use a separate option group for each template group, to make the list easier to scan.
+			if ($row['group_name'] != $current_template_group)
 			{
-				$DSP->body .= $DSP->input_select_option($t_opt, $t);
+				if ($current_template_group != '')
+				{
+					$DSP->body .= '</optgroup>';
+				}
+				
+				$DSP->body .= '<optgroup label="' .$row['group_name'] .'">';
+				$current_template_group = $row['group_name'];
 			}
+
+			$label		= $row['group_name'] .'/' .$row['template_name'];
+			$value		= $row['group_id'] .'.' .$row['template_id'];
+			$selected	= $value === $template_id ? 'y' : FALSE;
+
+			$DSP->body .= $DSP->input_select_option($value, $label, $selected);
 		}
 		
-		$DSP->body .= '</optgroup>'.NL;
+		$DSP->body .= '</optgroup>';
 		$DSP->body .= $DSP->input_select_footer();
 		$DSP->body .= $DSP->div_c();
 		//field end
